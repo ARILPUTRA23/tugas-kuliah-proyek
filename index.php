@@ -1,23 +1,35 @@
 <?php
-// Memulai session agar data tugas tetap tersimpan sementara saat halaman direfresh
 session_start();
 
-// Jika session tasks belum ada, buat array kosong
 if (!isset($_SESSION['tasks'])) {
-    $_SESSION['tasks'] = [
-        "Menyelesaikan laporan proyek kuliah",
-        "Melakukan uji keamanan dengan Burp Suite",
-        "Commit kode ke GitHub menggunakan Git Bash"
-    ];
+    $_SESSION['tasks'] = [];
 }
 
-// Cek jika ada tugas baru yang dikirim lewat form
-if (isset($_POST['task_name']) && !empty(trim($_POST['task_name']))) {
-    $newTask = htmlspecialchars(trim($_POST['task_name']));
-    $_SESSION['tasks'][] = $newTask; // Masukkan ke session
-    header("Location: " . $_SERVER['PHP_SELF']); // Refresh halaman agar bersih
+if (isset($_POST['add_task'])) {
+    $taskName = trim($_POST['task_name']);
+    $taskAssignee = trim($_POST['task_assignee']);
+    
+    if (!empty($taskName) && !empty($taskAssignee)) {
+        $_SESSION['tasks'][] = [
+            'name' => htmlspecialchars($taskName),
+            'assignee' => htmlspecialchars($taskAssignee)
+        ];
+    }
+    header("Location: index.php");
     exit();
 }
+
+if (isset($_GET['delete'])) {
+    $index = $_GET['delete'];
+    if (isset($_SESSION['tasks'][$index])) {
+        unset($_SESSION['tasks'][$index]);
+        $_SESSION['tasks'] = array_values($_SESSION['tasks']);
+    }
+    header("Location: index.php");
+    exit();
+}
+
+$total_tasks = count($_SESSION['tasks']);
 ?>
 
 <!DOCTYPE html>
@@ -25,44 +37,101 @@ if (isset($_POST['task_name']) && !empty(trim($_POST['task_name']))) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Tugas - Tugas Kuliah</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 40px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { color: #333; text-align: center; margin-bottom: 25px; }
-        form { display: flex; gap: 10px; margin-bottom: 25px; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        button { padding: 12px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #f9f9f9; margin-bottom: 10px; padding: 12px; border-left: 5px solid #007bff; border-radius: 4px; font-size: 15px; }
-        .info { background: #e2f0d9; color: #385723; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; text-align: center; }
-    </style>
+    <title>Manajemen Tugas Tim - Tugas Kuliah</title>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Eksternal -->
+    <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
-<div class="container">
-    <h2>Manajemen Tugas Tim Kuliah</h2>
-    <div class="info">Status: Mode Tanpa Database (Aman & Gampang untuk Tugas Kuliah)</div>
-    
-    <!-- Form Tambah Tugas -->
-    <form method="POST" action="">
-        <input type="text" name="task_name" placeholder="Masukkan nama tugas baru..." required autocomplete="off">
-        <button type="submit">Tambah Tugas</button>
-    </form>
+<div class="wrapper">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fa-solid fa-list-check"></i> Manajemen Tugas Kuliah</h1>
+        <p>Proyek Kolaborasi Tim Pengembang (Session-Based)</p>
+    </div>
 
-    <!-- Daftar Tugas -->
-    <h3>Daftar Tugas Aktif:</h3>
-    <ul>
-        <?php if (empty($_SESSION['tasks'])): ?>
-            <li>Belum ada tugas yang ditambahkan.</li>
-        <?php else: ?>
-            <?php foreach ($_SESSION['tasks'] as $task): ?>
-                <li><?php echo $task; ?></li>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </ul>
+    <!-- Statistik & Info Tim -->
+    <div class="info-section">
+        <div class="stat-box">
+            <span>Total Tugas Aktif</span>
+            <strong><?= $total_tasks; ?></strong>
+        </div>
+        <div class="team-box">
+            <span>👥 Anggota Tim:</span>
+            <ul>
+                <li><strong>Aril Putra</strong> (Ketua / Lead)</li>
+                <li><strong>Ahmad Tama</strong> (Developer)</li>
+                <li><strong>Wahib Maulana</strong> (Developer)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Form Input -->
+        <form method="POST" action="" id="taskForm">
+            <input type="text" name="task_name" id="taskInput" placeholder="Tulis tugas atau fitur baru..." autocomplete="off" required>
+            <select name="task_assignee" required>
+                <option value="">-- Pilih Anggota --</option>
+                <option value="Aril Putra (Ketua)">Aril Putra (Ketua)</option>
+                <option value="Ahmad Tama">Ahmad Tama</option>
+                <option value="Wahib Maulana">Wahib Maulana</option>
+            </select>
+            <button type="submit" name="add_task" class="btn-add">
+                <i class="fa-solid fa-plus"></i> Tambah
+            </button>
+        </form>
+
+        <!-- Tabel Data -->
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">No</th>
+                        <th>Nama Tugas / Fitur</th>
+                        <th>Penanggung Jawab</th>
+                        <th style="width: 15%; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($_SESSION['tasks'])): ?>
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <i class="fa-regular fa-folder-open"></i>
+                                Belum ada tugas. Silakan tambahkan tugas tim di atas!
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($_SESSION['tasks'] as $index => $task): ?>
+                            <tr>
+                                <td><?= $index + 1; ?></td>
+                                <td style="font-weight: 500;"><?= $task['name']; ?></td>
+                                <td>
+                                    <span class="badge"><i class="fa-solid fa-user"></i> <?= $task['assignee']; ?></span>
+                                </td>
+                                <td style="text-align: center;">
+                                    <a href="?delete=<?= $index; ?>" onclick="return confirm('Yakin ingin menghapus tugas ini?');" class="btn-delete">
+                                        <i class="fa-solid fa-trash-can"></i> Hapus
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer Tim -->
+    <div class="footer">
+        <p>&copy; 2026 Tugas Kuliah Proyek | <strong>Aril Putra, Ahmad Tama, Wahib Maulana</strong></p>
+    </div>
 </div>
 
+<!-- JS Eksternal -->
+<script src="assets/script.js"></script>
 </body>
 </html>
