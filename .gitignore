@@ -1,0 +1,15 @@
+# Mengabaikan file konfigurasi lokal atau rahasia
+.env
+config.local.php
+
+# Mengabaikan file sistem operasi
+.DS_Store
+Thumbs.db
+
+# Mengabaikan folder dependensi (jika nanti menggunakan Composer/Node)
+vendor/
+node_modules/
+
+# Mengabaikan file editor kode (seperti VS Code)
+.vscode/
+.idea/
